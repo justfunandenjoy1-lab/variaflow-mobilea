@@ -25,14 +25,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '8.4'
 
       - name: Extract Project ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
             echo "Unzipping $ZIP_FILE..."
-            unzip -q "$ZIP_FILE"
+            unzip -q -o "$ZIP_FILE"
           else
             echo "কোনো জিপ ফাইল পাওয়া যায়নি!"
           fi
@@ -45,9 +45,10 @@ jobs:
           fi
           cd "$TARGET_DIR"
 
+          # Gradle 8.4 দিয়ে wrapper স্ক্রিপ্ট তৈরি
           if [ ! -f "./gradlew" ]; then
             echo "gradlew তৈরি করা হচ্ছে..."
-            gradle wrapper
+            gradle wrapper --gradle-version 8.4
           fi
 
           chmod +x ./gradlew
