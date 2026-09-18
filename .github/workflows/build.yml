@@ -5,10 +5,6 @@ on:
     branches:
       - main
       - master
-  pull_request:
-    branches:
-      - main
-      - master
   workflow_dispatch:
 
 jobs:
@@ -31,17 +27,24 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Extract Project ZIP
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Unzipping $ZIP_FILE..."
+            unzip -q "$ZIP_FILE"
+          else
+            echo "কোনো জিপ ফাইল পাওয়া যায়নি!"
+          fi
+
       - name: Build with Gradle
         run: |
-          # প্রোজেক্ট ডিরেক্টরি শনাক্তকরণ
-          PROJECT_DIR="."
+          TARGET_DIR="."
           if [ -d "./VariaFlowMobile" ]; then
-            PROJECT_DIR="./VariaFlowMobile"
+            TARGET_DIR="./VariaFlowMobile"
           fi
-          cd "$PROJECT_DIR"
-          echo "Working in: $(pwd)"
+          cd "$TARGET_DIR"
 
-          # gradlew স্ক্রিপ্ট না থাকলে তৈরি করা
           if [ ! -f "./gradlew" ]; then
             echo "gradlew তৈরি করা হচ্ছে..."
             gradle wrapper
