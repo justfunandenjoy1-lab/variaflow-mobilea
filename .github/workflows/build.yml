@@ -2,14 +2,11 @@ name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -19,39 +16,32 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.6'
+          gradle-version: '8.8'
 
-      - name: Extract Project ZIP
+      - name: Grant Execute Permission for Gradlew
         run: |
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
-          if [ -n "$ZIP_FILE" ]; then
-            echo "Unzipping $ZIP_FILE..."
-            unzip -q -o "$ZIP_FILE"
+          if [ -d "VariaFlowMobile" ]; then
+            cd VariaFlowMobile
           fi
+          chmod +x gradlew || true
 
       - name: Build with Gradle
         run: |
           TARGET_DIR="."
-          if [ -d "./VariaFlowMobile" ]; then
-            TARGET_DIR="./VariaFlowMobile"
+          if [ -d "VariaFlowMobile" ]; then
+            TARGET_DIR="VariaFlowMobile"
           fi
-          cd "$TARGET_DIR"
-
-          # Gradle 8.6 সংস্করণ নিশ্চিত করা
-          gradle wrapper --gradle-version 8.6
-
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          cd $TARGET_DIR
+          gradle assembleDebug --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: variaflow-debug-apk
           path: '**/build/outputs/apk/debug/*.apk'
-          retention-days: 14
