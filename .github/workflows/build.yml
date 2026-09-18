@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -16,32 +17,57 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
-      - name: Setup Gradle
+      - name: Setup Base Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.8'
 
-      - name: Grant Execute Permission for Gradlew
+      - name: Extract Project ZIP
         run: |
-          if [ -d "VariaFlowMobile" ]; then
-            cd VariaFlowMobile
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Unzipping $ZIP_FILE..."
+            unzip -q -o "$ZIP_FILE"
           fi
-          chmod +x gradlew || true
 
-      - name: Build with Gradle
+      - name: Build with Project Gradle Wrapper
         run: |
-          TARGET_DIR="."
-          if [ -d "VariaFlowMobile" ]; then
-            TARGET_DIR="VariaFlowMobile"
+          # প্রজেক্ট ডিরেক্টরি নির্ধারণ
+          if [ -f "./settings.gradle.kts" ] || [ -f "./settings.gradle" ]; then
+            PROJECT_DIR="."
+          elif [ -d "./VariaFlowMobile" ]; then
+            PROJECT_DIR="./VariaFlowMobile"
+          else
+            PROJECT_DIR=$(find . -maxdepth 2 -name "settings.gradle*" -exec dirname {} \; | head -n 1)
           fi
-          cd $TARGET_DIR
-          gradle assembleDebug --stacktrace
+
+          cd "$PROJECT_DIR"
+          echo "Working in: $(pwd)"
+
+          # প্রজেক্টের আসল wrapper কনফিগারেশন ব্যাকআপ রাখা
+          if [ -f "gradle/wrapper/gradle-wrapper.properties" ]; then
+            cp gradle/wrapper/gradle-wrapper.properties /tmp/original-wrapper.properties
+          fi
+
+          # gradlew স্ক্রিপ্ট তৈরি
+          if [ ! -f "./gradlew" ]; then
+            echo "Generating gradlew wrapper..."
+            gradle wrapper
+          fi
+
+          # প্রজেক্টের আসল ভার্সন ফিরিয়ে আনা
+          if [ -f "/tmp/original-wrapper.properties" ]; then
+            echo "Restoring original gradle-wrapper.properties..."
+            cp /tmp/original-wrapper.properties gradle/wrapper/gradle-wrapper.properties
+          fi
+
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: variaflow-debug-apk
           path: '**/build/outputs/apk/debug/*.apk'
+          retention-days: 14
