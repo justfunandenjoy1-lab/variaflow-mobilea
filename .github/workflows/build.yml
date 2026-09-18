@@ -27,9 +27,35 @@ jobs:
             unzip -q -o "$ZIP_FILE"
           fi
 
+      - name: Auto-fix Kotlin Code Errors
+        run: |
+          python3 -c "
+          import glob, re
+
+          # ১. PresetSelector.kt ফাইলে dp ইমপোর্ট যুক্ত করা
+          for p_file in glob.glob('**/PresetSelector.kt', recursive=True):
+              with open(p_file, 'r', encoding='utf-8') as f:
+                  code = f.read()
+              if 'import androidx.compose.ui.unit.dp' not in code:
+                  code = re.sub(r'(package [^\n]+)', r'\1\nimport androidx.compose.ui.unit.dp', code, count=1)
+                  with open(p_file, 'w', encoding='utf-8') as f:
+                      f.write(code)
+                  print('Fixed:', p_file)
+
+          # ২. SettingsPanel.kt ফাইলে ExposedDropdownMenu সমাধান করা
+          for s_file in glob.glob('**/SettingsPanel.kt', recursive=True):
+              with open(s_file, 'r', encoding='utf-8') as f:
+                  code = f.read()
+              code = re.sub(r'\bExposedDropdownMenu\b', 'DropdownMenu', code)
+              if 'import androidx.compose.material3.DropdownMenu' not in code:
+                  code = re.sub(r'(package [^\n]+)', r'\1\nimport androidx.compose.material3.DropdownMenu', code, count=1)
+              with open(s_file, 'w', encoding='utf-8') as f:
+                  f.write(code)
+              print('Fixed:', s_file)
+          "
+
       - name: Download Gradle 8.13 & Build APK
         run: |
-          # অফিশিয়াল Gradle 8.13 ডাউনলোড
           wget -q https://services.gradle.org/distributions/gradle-8.13-bin.zip
           unzip -q gradle-8.13-bin.zip
           GRADLE_EXEC="$(pwd)/gradle-8.13/bin/gradle"
@@ -38,10 +64,6 @@ jobs:
             cd "./VariaFlowMobile"
           fi
 
-          echo "Using Gradle version:"
-          "$GRADLE_EXEC" --version
-
-          # APK বিল্ড
           "$GRADLE_EXEC" assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK
