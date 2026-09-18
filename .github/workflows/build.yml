@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Actions ট্যাব থেকে ম্যানুয়ালি রান করার অপশন
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+          elif [ -f "./VariaFlowMobile/gradlew" ]; then
+            chmod +x ./VariaFlowMobile/gradlew
+          fi
+
+      - name: Build with Gradle
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug --stacktrace
+          elif [ -f "./VariaFlowMobile/gradlew" ]; then
+            cd VariaFlowMobile && ./gradlew assembleDebug --stacktrace
+          else
+            echo "gradlew পাওয়া যায়নি!" && exit 1
+          fi
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: variaflow-debug-apk
+          path: '**/build/outputs/apk/debug/*.apk'
+          retention-days: 14
