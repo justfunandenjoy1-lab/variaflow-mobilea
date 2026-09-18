@@ -20,50 +20,30 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Base Gradle
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Extract Project ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
-            echo "Unzipping $ZIP_FILE..."
             unzip -q -o "$ZIP_FILE"
           fi
 
-      - name: Build with Project Gradle Wrapper
+      - name: Download Gradle 8.7 & Build APK
         run: |
-          # প্রজেক্ট ডিরেক্টরি নির্ধারণ
-          if [ -f "./settings.gradle.kts" ] || [ -f "./settings.gradle" ]; then
-            PROJECT_DIR="."
-          elif [ -d "./VariaFlowMobile" ]; then
-            PROJECT_DIR="./VariaFlowMobile"
-          else
-            PROJECT_DIR=$(find . -maxdepth 2 -name "settings.gradle*" -exec dirname {} \; | head -n 1)
+          # অফিশিয়াল Gradle 8.7 ডাউনলোড (যাতে সিস্টেমের 9.7.1 কোনোভাবেই রান না হয়)
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          GRADLE_EXEC="$(pwd)/gradle-8.7/bin/gradle"
+
+          # প্রজেক্ট ফোল্ডারে প্রবেশ
+          if [ -d "./VariaFlowMobile" ]; then
+            cd "./VariaFlowMobile"
           fi
 
-          cd "$PROJECT_DIR"
-          echo "Working in: $(pwd)"
+          echo "Using exact Gradle version:"
+          "$GRADLE_EXEC" --version
 
-          # প্রজেক্টের আসল wrapper কনফিগারেশন ব্যাকআপ রাখা
-          if [ -f "gradle/wrapper/gradle-wrapper.properties" ]; then
-            cp gradle/wrapper/gradle-wrapper.properties /tmp/original-wrapper.properties
-          fi
-
-          # gradlew স্ক্রিপ্ট তৈরি
-          if [ ! -f "./gradlew" ]; then
-            echo "Generating gradlew wrapper..."
-            gradle wrapper
-          fi
-
-          # প্রজেক্টের আসল ভার্সন ফিরিয়ে আনা
-          if [ -f "/tmp/original-wrapper.properties" ]; then
-            echo "Restoring original gradle-wrapper.properties..."
-            cp /tmp/original-wrapper.properties gradle/wrapper/gradle-wrapper.properties
-          fi
-
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          # সরাসরি 8.7 দিয়ে APK বিল্ড
+          "$GRADLE_EXEC" assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
