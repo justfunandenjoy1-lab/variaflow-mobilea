@@ -9,7 +9,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # Actions ট্যাব থেকে ম্যানুয়ালি রান করার অপশন
+  workflow_dispatch:
 
 jobs:
   build:
@@ -27,25 +27,28 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Grant execute permission for gradlew
-        run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-          elif [ -f "./VariaFlowMobile/gradlew" ]; then
-            chmod +x ./VariaFlowMobile/gradlew
-          fi
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Build with Gradle
         run: |
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --stacktrace
-          elif [ -f "./VariaFlowMobile/gradlew" ]; then
-            cd VariaFlowMobile && ./gradlew assembleDebug --stacktrace
-          else
-            echo "gradlew পাওয়া যায়নি!" && exit 1
+          # প্রোজেক্ট ডিরেক্টরি শনাক্তকরণ
+          PROJECT_DIR="."
+          if [ -d "./VariaFlowMobile" ]; then
+            PROJECT_DIR="./VariaFlowMobile"
           fi
+          cd "$PROJECT_DIR"
+          echo "Working in: $(pwd)"
+
+          # gradlew স্ক্রিপ্ট না থাকলে তৈরি করা
+          if [ ! -f "./gradlew" ]; then
+            echo "gradlew তৈরি করা হচ্ছে..."
+            gradle wrapper
+          fi
+
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
