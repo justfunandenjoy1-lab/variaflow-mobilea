@@ -27,22 +27,21 @@ jobs:
             unzip -q -o "$ZIP_FILE"
           fi
 
-      - name: Download Gradle 8.7 & Build APK
+      - name: Download Gradle 8.13 & Build APK
         run: |
-          # অফিশিয়াল Gradle 8.7 ডাউনলোড (যাতে সিস্টেমের 9.7.1 কোনোভাবেই রান না হয়)
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          GRADLE_EXEC="$(pwd)/gradle-8.7/bin/gradle"
+          # অফিশিয়াল Gradle 8.13 ডাউনলোড
+          wget -q https://services.gradle.org/distributions/gradle-8.13-bin.zip
+          unzip -q gradle-8.13-bin.zip
+          GRADLE_EXEC="$(pwd)/gradle-8.13/bin/gradle"
 
-          # প্রজেক্ট ফোল্ডারে প্রবেশ
           if [ -d "./VariaFlowMobile" ]; then
             cd "./VariaFlowMobile"
           fi
 
-          echo "Using exact Gradle version:"
+          echo "Using Gradle version:"
           "$GRADLE_EXEC" --version
 
-          # সরাসরি 8.7 দিয়ে APK বিল্ড
+          # APK বিল্ড
           "$GRADLE_EXEC" assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK
